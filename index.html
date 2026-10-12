@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="가상 친환경 기업 그린베일의 홈페이지를 조사해 그린워싱 증거를 모으는 SDGs-ESG 추리 게임">
+<meta property="og:title" content="NO GREEN FOUND">
+<meta property="og:description" content="초록빛 홈페이지 뒤에 숨은 그린워싱을 찾아라 · SDGs-ESG 공모전 〈동아리, 가치 더하기〉">
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>NO GREEN FOUND</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: 가상 데스크톱 OS. 창(브라우저·증거함·메일·신고서)을 띄워 가짜 친환경 기업 사이트를 조사하는 단일 화면 앱. 의도적으로 단일 테마. */
+:root{
+  --desk:#24423f; --desk-2:#172b29; --desk-line:#2f5450;
+  --chrome:#e9e5dc; --chrome-2:#d4cec2; --chrome-edge:#8d877b; --ink:#1e2422; --muted:#5d6560;
+  --site-bg:#f2f7ef; --site-ink:#173326; --leaf:#2e8a4e; --leaf-2:#cfe6cf; --sky:#d7ece6;
+  --stamp:#bf3a2b; --paper:#fbf8f0; --hl:#f3d34a; --ok:#2e7d4f;
+  --f-ui:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-disp:"Gowun Batang","Nanum Myeongjo",serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{background:var(--desk-2);color:var(--ink);font-family:var(--f-ui);overflow:hidden;font-size:14px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--hl);outline-offset:2px}
+
+#os{position:fixed;inset:0;padding-top:env(safe-area-inset-top,0px);display:grid;grid-template-rows:minmax(0,1fr) auto;grid-template-columns:minmax(0,1fr)}
+#desk{position:relative;overflow:hidden;
+  background:
+    radial-gradient(120% 90% at 85% 10%, #2f5753 0%, transparent 55%),
+    repeating-linear-gradient(0deg, transparent 0 31px, var(--desk-line) 31px 32px),
+    repeating-linear-gradient(90deg, transparent 0 31px, var(--desk-line) 31px 32px),
+    var(--desk);}
+#icons{position:absolute;left:16px;top:16px;display:grid;gap:10px;grid-template-columns:84px}
+.dicon{background:none;border:0;color:#eef3ee;display:grid;justify-items:center;gap:6px;padding:8px 4px;border-radius:6px;font-size:12px;text-shadow:0 1px 2px #0008}
+.dicon:hover{background:#ffffff14}
+.dicon svg{width:40px;height:40px}
+.dicon .badge{font-family:var(--f-mono);font-size:10px;background:var(--stamp);color:#fff;border-radius:8px;padding:0 6px;margin-top:-4px}
+
+/* windows */
+.win{position:absolute;background:var(--chrome);border:1px solid var(--chrome-edge);border-radius:8px;box-shadow:0 18px 40px #0007,0 2px 0 #fff6 inset;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.win.hidden{display:none}
+.tbar{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 12px;background:var(--chrome-2);border-bottom:1px solid var(--chrome-edge);user-select:none;cursor:grab;touch-action:none}
+.tbar h2{margin:0;font-size:13px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tbar .x{width:22px;height:22px;border-radius:50%;border:1px solid var(--chrome-edge);background:var(--chrome);display:grid;place-items:center;font-size:12px;line-height:1}
+.tbar .x:hover{background:var(--stamp);color:#fff}
+.wbody{flex:1;overflow:auto;min-height:0}
+
+/* taskbar */
+#bar{display:flex;align-items:center;gap:6px;padding:6px 10px calc(6px + env(safe-area-inset-bottom,0px));background:#101c1b;color:#dfe8e2;border-top:1px solid #2c4542}
+#bar .start{font-family:var(--f-mono);font-weight:600;font-size:12px;letter-spacing:.06em;background:var(--hl);color:#1a1a12;border:0;border-radius:4px;padding:5px 10px}
+#tasks{display:flex;gap:4px;overflow-x:auto;flex:1;min-width:0}
+#tasks button{background:#1d2e2c;border:1px solid #2f4a47;color:#dfe8e2;border-radius:4px;padding:4px 10px;font-size:12px;white-space:nowrap}
+#tasks button.on{background:#335450;border-color:#4f7a75}
+#meter{font-family:var(--f-mono);font-size:12px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+#meter i{display:inline-block;width:8px;height:12px;background:#2f4a47;border-radius:1px}
+#meter i.on{background:var(--hl)}
+#clock{font-family:var(--f-mono);font-size:12px;opacity:.8;white-space:nowrap}
+
+/* browser */
+.bwrap{display:flex;flex-direction:column;height:100%}
+.btool{display:flex;gap:6px;align-items:center;padding:6px 8px;border-bottom:1px solid var(--chrome-2);flex-wrap:wrap}
+.btool .nb{border:1px solid var(--chrome-edge);background:#f5f2ec;border-radius:4px;padding:3px 9px}
+.btool form{flex:1;display:flex;min-width:180px}
+.btool input{flex:1;min-width:0;border:1px solid var(--chrome-edge);border-radius:4px 0 0 4px;padding:4px 8px;background:#fff;font-family:var(--f-mono);font-size:12px}
+.btool form button{border:1px solid var(--chrome-edge);border-left:0;border-radius:0 4px 4px 0;background:#f5f2ec;padding:3px 10px}
+.inspect{display:flex;align-items:center;gap:6px;border:1px solid var(--chrome-edge);background:#f5f2ec;border-radius:4px;padding:3px 10px;font-weight:600}
+.inspect[aria-pressed="true"]{background:var(--hl);border-color:#9a8420}
+.bmarks{display:flex;gap:4px;padding:4px 8px;border-bottom:1px solid var(--chrome-edge);font-size:12px;flex-wrap:wrap}
+.bmarks button{border:0;background:none;padding:2px 8px;border-radius:4px;color:var(--muted)}
+.bmarks button:hover{background:var(--chrome-2);color:var(--ink)}
+.view{flex:1;overflow:auto;background:#fff;position:relative}
+.view.inspecting, .view.inspecting *{cursor:zoom-in!important}
+
+/* ===== company site ===== */
+.site{background:var(--site-bg);color:var(--site-ink);min-height:100%;font-size:15px;transition:filter .8s}
+.s-head{display:flex;align-items:center;gap:16px;padding:14px 24px;border-bottom:1px solid var(--leaf-2);flex-wrap:wrap;background:#fff}
+.logo{display:flex;align-items:center;gap:8px;font-family:var(--f-disp);font-weight:700;font-size:20px;color:var(--leaf);text-decoration:none}
+.logo svg{width:26px;height:26px;transition:filter .8s}
+.s-nav{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
+.s-nav a{color:var(--site-ink);text-decoration:none;padding:6px 10px;border-radius:20px;font-size:13px}
+.s-nav a.cur{background:var(--leaf-2)}
+.s-main{padding:28px 24px 40px;display:grid;gap:28px;max-width:860px}
+.hero{display:grid;gap:12px;padding:28px;border-radius:18px;background:linear-gradient(135deg,#e3f2df,#cfe9dd 60%,#bfe0d6);position:relative;overflow:hidden}
+.hero h1{font-family:var(--f-disp);font-size:clamp(26px,4vw,38px);line-height:1.25;margin:0;text-wrap:balance}
+.hero p{margin:0;max-width:56ch;line-height:1.7}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--leaf);font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.stat{background:#fff;border-radius:12px;padding:16px;display:grid;gap:4px}
+.stat b{font-family:var(--f-disp);font-size:28px;color:var(--leaf);font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:#4c6457}
+.s-sec{display:grid;gap:12px}
+.s-sec h2{font-family:var(--f-disp);font-size:24px;margin:0}
+.s-sec p{margin:0;line-height:1.75;max-width:62ch}
+.river{border-radius:14px;overflow:hidden;background:#fff;display:grid}
+.river .pic{height:150px;background:
+  linear-gradient(170deg,transparent 0 46%,#8ccbd6 46% 58%,transparent 58%),
+  linear-gradient(180deg,#bfe3f0 0 40%,#9fd09a 40% 100%);position:relative}
+.river .pic::after{content:"";position:absolute;right:10%;top:22%;width:70px;height:46px;background:#c9cfc8;border-radius:3px;box-shadow:-18px 10px 0 -6px #b8beb6}
+.river figcaption{padding:12px 16px;font-size:13px;color:#4c6457}
+.prod{display:grid;grid-template-columns:140px 1fr;gap:18px;background:#fff;border-radius:14px;padding:18px;align-items:center}
+.prod .box{aspect-ratio:1;max-width:100%;border-radius:10px;background:repeating-linear-gradient(45deg,#d9c9a3 0 8px,#cfbe95 8px 16px);display:grid;place-items:center;font-family:var(--f-disp);color:#5a4a2a;font-weight:700}
+.gbadge{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--leaf);color:var(--leaf);border-radius:30px;padding:4px 12px 4px 6px;font-weight:700;font-size:12px;background:#f3fbf2}
+.gbadge svg{width:20px;height:20px}
+.chart{background:#fff;border-radius:14px;padding:14px;overflow-x:auto}
+.chart svg{display:block;width:100%;min-width:420px;height:auto}
+.chart .grid{stroke:#e2ebe2;stroke-width:1}
+.chart .tl{font:11px var(--f-mono);fill:#6a7d70}
+.chart .yl{font:12px var(--f-ui);fill:#2b4a3a}
+.chart .b12{fill:var(--leaf)}
+.chart .b3{fill:#d98a6a}
+.chart .cap{font:600 12px var(--f-ui);fill:var(--stamp)}
+table.t{border-collapse:collapse;font-size:13px;background:#fff;border-radius:10px;overflow:hidden;font-variant-numeric:tabular-nums}
+table.t td,table.t th{padding:8px 12px;border-bottom:1px solid #e3ece3;text-align:left}
+.forest{border-radius:14px;padding:22px;background:linear-gradient(160deg,#16452c,#2a6b3f);color:#e9f6ec;display:grid;gap:10px}
+.forest h2{color:#fff}
+.forest code{font-family:var(--f-mono);background:#0003;padding:2px 6px;border-radius:4px}
+.job{display:flex;justify-content:space-between;gap:12px;background:#fff;border-radius:10px;padding:12px 16px;flex-wrap:wrap}
+.ghost{color:var(--site-bg);line-height:1.7;font-size:13px;user-select:text}
+.ghost::selection{background:var(--stamp);color:#fff}
+.people{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.person{background:#fff;border-radius:12px;padding:16px;display:grid;gap:2px}
+.person .av{width:46px;height:46px;border-radius:50%;background:var(--leaf-2);margin-bottom:8px}
+.person b{font-size:16px}
+.person small{color:#5b7365}
+.s-foot{padding:18px 24px;font-size:12px;color:#6b8073;border-top:1px solid var(--leaf-2)}
+.ticker{font-size:12px;color:#4c6457;background:#fff;border-radius:30px;padding:6px 14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+
+.view{container-type:inline-size}
+.hero{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);align-items:center;gap:24px}
+.hero-txt{display:grid;gap:14px;min-width:0}
+.hero-img{margin:0;display:grid;gap:6px;min-width:0}
+.hero-img svg,.river svg,.sat svg{display:block;width:100%;height:auto}
+.hero-img svg{border-radius:12px;box-shadow:0 12px 26px #1b3d2a40}
+.hero-img figcaption{font-size:12px;color:#456352}
+.hero-img small{display:block;color:#7a8f81;font-size:10.5px}
+.ctas{display:flex;gap:8px;flex-wrap:wrap}
+.cta{background:var(--leaf);color:#fff;text-decoration:none;padding:9px 16px;border-radius:30px;font-size:13px;font-weight:600}
+.cta2{background:#fff;color:var(--leaf);border:1px solid var(--leaf)}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:center}
+.donut-card{background:#fff;border-radius:14px;padding:18px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.legend{list-style:none;margin:0;padding:0;display:grid;gap:8px;font-size:13px;flex:1;min-width:150px}
+.legend li{display:flex;align-items:center;gap:8px}
+.legend i{width:12px;height:12px;border-radius:3px;flex:none}
+.legend b{margin-left:auto;font-variant-numeric:tabular-nums}
+.fine{font-size:11.5px!important;color:#7a8f81}
+.road{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.road li{background:#fff;border-radius:12px;padding:14px;border-top:3px solid var(--leaf);display:grid;gap:4px}
+.road b{font-family:var(--f-mono);color:var(--leaf);font-size:13px}
+.road small{color:#7a8f81;font-size:11px}
+.sat{margin:0;border-radius:14px;overflow:hidden;background:#fff;display:grid}
+.sat figcaption,.river figcaption{padding:10px 16px;font-size:13px;color:#4c6457}
+.prod .box{background:#f5efe2;padding:8px}
+.prod .box svg{width:100%;height:auto}
+.person .av{overflow:hidden}
+.blades{animation:spin var(--d,7s) linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@container (max-width:640px){.hero,.two{grid-template-columns:1fr}.road{grid-template-columns:repeat(2,minmax(0,1fr))}.prod{grid-template-columns:1fr}.prod .box{max-width:140px}}
+/* exposed truths & corruption */
+.sus.exposed{text-decoration:line-through 2px var(--stamp);opacity:.75}
+.truth{display:block;margin-top:6px;font-family:var(--f-mono);font-size:12px;line-height:1.55;color:var(--stamp);background:#fff3ef;border-left:3px solid var(--stamp);padding:6px 10px;text-decoration:none;transform:rotate(-.3deg)}
+.truth::before{content:"[검증] ";font-weight:600}
+.ghost.exposed{color:var(--stamp)}
+.site.c2 .logo svg{filter:hue-rotate(-60deg) saturate(.6)}
+.site.c3 .hero{background:linear-gradient(135deg,#e6ebe2,#d6ded6 60%,#c9d1cc)}
+.site.c4 .hero h1{animation:glitch 4s infinite steps(1)}
+.site.c5{filter:saturate(.55)}
+.site.c6 .logo{color:#7d6a52}
+.site.c7{filter:saturate(.2) contrast(1.05)}
+.site.c7 .s-head{border-bottom-color:var(--stamp)}
+@keyframes glitch{0%,92%{transform:none;text-shadow:none}93%{transform:translateX(3px);text-shadow:-2px 0 var(--stamp)}95%{transform:translateX(-2px);text-shadow:2px 0 #2b7}97%{transform:none}}
+.flash{animation:flash .7s}
+@keyframes flash{0%{filter:invert(1)}30%{filter:invert(0) hue-rotate(90deg)}100%{filter:none}}
+.apology{background:var(--paper);border:2px solid var(--stamp);border-radius:12px;padding:20px;display:grid;gap:8px}
+.apology h2{color:var(--stamp)}
+
+/* ===== search engine ===== */
+.seekr{min-height:100%;background:#fafaf8;color:#222;font-family:var(--f-ui)}
+.sk-home{display:grid;justify-items:center;gap:16px;padding:60px 16px}
+.sk-logo{font-family:var(--f-mono);font-weight:600;font-size:34px;letter-spacing:-.02em}
+.sk-logo span{color:#3a6ea5}
+.sk-form{display:flex;width:min(560px,100%)}
+.sk-form input{flex:1;min-width:0;padding:10px 16px;border:1px solid #bbb;border-radius:24px 0 0 24px;background:#fff}
+.sk-form button{padding:10px 18px;border:1px solid #bbb;border-left:0;border-radius:0 24px 24px 0;background:#eee}
+.sk-top{display:flex;gap:16px;align-items:center;padding:14px 20px;border-bottom:1px solid #e3e3e0;flex-wrap:wrap}
+.sk-top .sk-logo{font-size:20px}
+.sk-res{padding:16px 20px 40px;display:grid;gap:22px;max-width:680px}
+.sk-r{display:grid;gap:4px}
+.sk-r .url{font-family:var(--f-mono);font-size:12px;color:#3b7a4b}
+.sk-r h3{margin:0;font-size:17px;color:#2a55a0;font-weight:500}
+.sk-r p{margin:0;line-height:1.65;color:#444;font-size:14px}
+.sk-r .date{color:#888;font-size:12px}
+.sk-meta{font-size:12px;color:#888}
+.nores{display:grid;justify-items:center;gap:10px;padding:70px 16px;text-align:center}
+.nores b{font-family:var(--f-mono);font-size:clamp(22px,5vw,40px);letter-spacing:.08em;color:#2a2a2a}
+.nores p{margin:0;color:#777;max-width:44ch;line-height:1.6}
+.sk-sugg{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.sk-sugg button{border:1px solid #ccc;background:#fff;border-radius:20px;padding:4px 12px;font-size:12px}
+.errpage{padding:60px 24px;font-family:var(--f-mono);display:grid;gap:10px}
+.errpage b{font-size:36px}
+
+/* ===== evidence / mail / report ===== */
+.pad{padding:16px;display:grid;gap:14px}
+.ev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.ev{background:var(--paper);border:1px solid #d8d0bd;border-radius:6px;padding:12px;display:grid;gap:6px;align-content:start;position:relative;min-width:0}
+.ev.empty{background:repeating-linear-gradient(-45deg,#e3ded3 0 6px,#ddd7cb 6px 12px);color:#8a8477;place-items:center;min-height:120px;font-family:var(--f-mono)}
+.ev h3{margin:0;font-size:14px}
+.ev .no{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.ev .claim{font-size:12px;color:var(--muted);text-decoration:line-through}
+.ev .tru{font-size:13px;line-height:1.55}
+.chips{display:flex;gap:4px;flex-wrap:wrap}
+.chip{font-family:var(--f-mono);font-size:10.5px;border-radius:3px;padding:1px 6px;background:#24423f;color:#e9f3ee}
+.chip.e{background:#2e7d4f}.chip.s{background:#a8632a}.chip.g{background:#4a4f8a}
+.stampmark{position:absolute;right:10px;top:8px;font-family:var(--f-mono);font-size:10px;font-weight:600;color:var(--stamp);border:1.5px solid var(--stamp);padding:0 5px;transform:rotate(6deg)}
+.mail{display:grid;grid-template-columns:200px 1fr;height:100%}
+.mlist{border-right:1px solid var(--chrome-2);overflow:auto;background:#f3f0e9}
+.mlist button{display:grid;gap:2px;text-align:left;width:100%;border:0;border-bottom:1px solid var(--chrome-2);background:none;padding:10px 12px}
+.mlist button.cur{background:#fff}
+.mlist button.unread b::before{content:"● ";color:var(--stamp)}
+.mlist small{color:var(--muted);font-size:11px}
+.mread{padding:18px;overflow:auto;background:#fff;line-height:1.75;min-width:0}
+.mread h3{margin:0 0 4px;font-size:16px}
+.mread .from{font-size:12px;color:var(--muted);margin-bottom:14px;font-family:var(--f-mono)}
+.mread p{margin:0 0 12px;max-width:62ch}
+.btn{border:1px solid var(--chrome-edge);background:#f5f2ec;border-radius:5px;padding:7px 14px;font-weight:600}
+.btn.pri{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.red{background:var(--stamp);color:#fff;border-color:var(--stamp)}
+.hintbox{background:#fff8d6;border:1px dashed #b39a2a;border-radius:6px;padding:10px 12px;font-size:13px}
+.form-row{display:grid;gap:6px}
+.form-row label{font-weight:600;font-size:13px}
+.opt{display:flex;gap:8px;align-items:flex-start;background:#fff;border:1px solid var(--chrome-2);border-radius:6px;padding:10px 12px;cursor:pointer}
+.opt input{margin-top:3px}
+.opt small{display:block;color:var(--muted)}
+textarea{border:1px solid var(--chrome-edge);border-radius:5px;padding:8px;min-height:70px;resize:vertical;background:#fff}
+
+/* modal */
+#modal{position:absolute;inset:0;background:#0b1514b3;display:grid;place-items:center;padding:16px;z-index:9000}
+#modal[hidden]{display:none!important}
+.mbox{background:var(--paper);border-radius:10px;max-width:560px;width:100%;max-height:100%;overflow:auto;box-shadow:0 30px 60px #000a;border:1px solid #cfc6b1}
+.mbox .mh{padding:14px 18px;border-bottom:1px solid #e3dccb;font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;display:flex;justify-content:space-between;gap:8px}
+.mbox .mb{padding:18px;display:grid;gap:12px}
+.mbox h3{margin:0;font-size:18px;line-height:1.4}
+.quote{font-family:var(--f-disp);font-size:16px;background:#fff;border-left:4px solid var(--leaf);padding:10px 14px}
+.qopt{display:block;width:100%;text-align:left;border:1px solid #d6cdb8;background:#fff;border-radius:6px;padding:10px 12px;line-height:1.5}
+.qopt:hover:not(:disabled){border-color:var(--ink)}
+.qopt:disabled{opacity:.45;text-decoration:line-through;cursor:not-allowed}
+.shake{animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
+.big-stamp{font-family:var(--f-mono);font-weight:600;color:var(--stamp);border:3px solid var(--stamp);display:inline-block;padding:4px 12px;transform:rotate(-4deg);letter-spacing:.1em;justify-self:start}
+
+#toast{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);background:#101c1bee;color:#f0f4f1;padding:10px 16px;border-radius:6px;font-size:13px;max-width:min(520px,calc(100% - 32px));z-index:9500;line-height:1.5;border-left:3px solid var(--hl)}
+#toast[hidden]{display:none!important}
+
+/* boot */
+#boot{position:fixed;inset:0;z-index:10000;background:var(--desk-2);color:#e7efe9;display:grid;place-items:center;padding:16px;overflow:auto}
+#boot[hidden]{display:none!important}
+.bootbox{max-width:620px;display:grid;gap:18px}
+.bootbox .t{font-family:var(--f-mono);font-weight:600;font-size:clamp(34px,8vw,64px);letter-spacing:.04em;line-height:1}
+.bootbox .t s{color:var(--hl);text-decoration-color:var(--stamp);text-decoration-thickness:4px}
+.bootbox p{margin:0;line-height:1.75;color:#b9c9c0;max-width:56ch}
+.bootbox .row{display:flex;gap:10px;flex-wrap:wrap}
+.bootbox .btn{background:#1f3532;color:#e7efe9;border-color:#3d5e5a}
+.bootbox .btn.pri{background:var(--hl);color:#1a1a12;border-color:var(--hl)}
+.bootbox small{font-family:var(--f-mono);color:#7f978c;font-size:11px}
+
+@media (max-width:760px){
+  #icons{display:none}
+  .win{left:8px!important;top:8px!important;right:8px;bottom:8px;width:auto!important;height:auto!important}
+  .tbar{cursor:default}
+  .mail{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .mlist{border-right:0;border-bottom:1px solid var(--chrome-2);max-height:150px}
+  .prod{grid-template-columns:1fr}
+  .prod .box{max-width:140px}
+  .s-main{padding:20px 16px 32px}
+  .s-head{padding:12px 16px}
+  #meter .lbl,#clock{display:none}
+  #meter #meterBars{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="boot">
+  <div class="bootbox">
+    <small>SDGs-ESG 공모전 〈동아리, 가치 더하기〉 출품작 · 데스크톱 추리 어드벤처</small>
+    <div class="t">NO <s>GREEN</s><br>FOUND</div>
+    <p>친환경 기업 <b>그린베일(GreenVeil)</b>의 홈페이지는 완벽해 보입니다. 익명의 제보자가 그 초록빛 뒤에 숨은 이야기를 보내왔습니다. 브라우저와 검색엔진으로 사이트를 뒤지고, 수상한 문구를 찾아 증거를 모으고, 신고서를 제출하세요.</p>
+    <p>약 15–20분 · 증거 7개 · 엔딩 4종. 그린베일과 등장인물, 사건은 모두 가상입니다.</p>
+    <div class="row">
+      <button class="btn pri" id="bootStart">조사 시작</button>
+      <button class="btn" id="bootResume" hidden>이어서 하기</button>
+    </div>
+  </div>
+</div>
+
+<div id="os">
+  <div id="desk">
+    <div id="icons"></div>
+    <div id="toast" hidden></div>
+    <div id="modal" hidden><div class="mbox" id="mbox"></div></div>
+  </div>
+  <div id="bar">
+    <button class="start" id="startBtn" title="처음부터 다시">NGF</button>
+    <div id="tasks"></div>
+    <div id="meter"><span class="lbl">증거</span><span id="meterBars"></span><span id="meterNum">0/7</span></div>
+    <div id="clock"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---------------- data ---------------- */
+const SDG={6:"깨끗한 물과 위생",7:"깨끗한 에너지",8:"양질의 일자리",12:"책임 있는 소비·생산",13:"기후변화 대응",14:"해양생태계",15:"육상생태계",16:"정의·강력한 제도"};
+const ORDER=["rec","badge","chart","river","forest","labor","board"];
+const CLUES={
+ rec:{title:"'100% 재생에너지' 운영",where:"홈 > 메인 배너",esg:"E",sdg:[7,13],
+  claim:"모든 사업장을 100% 재생에너지로 운영합니다",
+  truth:"재생에너지 인증서(REC)를 구매해 서류상으로만 상쇄. 실제 공장 전력의 92%는 화력발전 기반 계약(2025 전력거래 내역).",
+  q:"이 문구는 어떤 방식으로 소비자를 오해하게 만들까요?",
+  opts:["사실이지만 제품과 상관없는 정보를 강조했다","인증서 구매를 실제 재생에너지 사용처럼 표현했다","외부 검증이 없는 자체 인증마크를 붙였다","더 나쁜 경쟁사와 비교해 상대적으로 좋아 보이게 했다"],a:1,
+  explain:"REC는 재생에너지 발전의 '환경 가치'를 사는 증서입니다. 산 만큼 상쇄했다고 말할 수는 있지만, 공장이 실제로 재생에너지 전기를 쓴다는 뜻은 아닙니다.",
+  hint:"메인 배너 문장 중 숫자가 들어간 주장을 조사 모드로 눌러보세요. 검색엔진에 'REC'를 찾아봐도 좋습니다."},
+ badge:{title:"자체 제작 'GV-Green 인증'",where:"제품 > 에코팩",esg:"E",sdg:[12],
+  claim:"GV-Green 인증 · 100% 생분해 포장재",
+  truth:"인증 발급기관은 그린베일 ESG센터(자사). 외부 검증 없음. '생분해'는 58℃ 산업용 퇴비화 시설에서만 가능하고 국내 수거 체계도 없음.",
+  q:"이 인증 마크의 핵심 문제는 무엇일까요?",
+  opts:["인증 기준이 너무 엄격하다","외부 기관 인증처럼 보이게 만든 자체 라벨이다","생분해 기간을 너무 짧게 적었다","친환경 제품을 너무 비싸게 판다"],a:1,
+  explain:"제3자 검증 없이 기업이 직접 만든 인증마크는 공인 인증처럼 보이게 해 소비자를 오인시키는 대표적 그린워싱 유형(가짜 라벨)입니다.",
+  hint:"제품 페이지의 초록색 인증 마크를 조사해보세요. 검색엔진에 마크 이름을 넣어봐도 됩니다."},
+ chart:{title:"착시를 노린 배출량 그래프",where:"지속가능경영 > 배출 추이",esg:"E",sdg:[13],
+  claim:"5년간 탄소 배출 대폭 감축",
+  truth:"y축이 0이 아니라 9,600에서 시작해 6.4% 감소가 절반 이상 줄어든 것처럼 보임. 가장 큰 배출원인 Scope 3(공급망)는 18% 증가했고, 포함하면 총배출은 9.9% 늘었음.",
+  q:"이 그래프가 감축 효과를 부풀린 방법은?",
+  opts:["단위를 톤이 아닌 킬로그램으로 바꿨다","y축을 0이 아닌 값에서 시작하고, 가장 큰 배출원을 뺐다","연도 순서를 거꾸로 배치했다","다른 회사의 데이터를 가져왔다"],a:1,
+  explain:"축 잘라내기는 작은 변화를 크게 보이게 하는 고전적 시각 왜곡입니다. 여기에 Scope 3를 '산정 중'으로 빼면 실제 총배출 증가가 가려집니다.",
+  hint:"그래프의 y축 숫자를 잘 보세요. 맨 아래 눈금이 몇에서 시작하나요?"},
+ river:{title:"반석천 폐수 방류",where:"검색 > 지역 뉴스",esg:"E",sdg:[6,14],
+  claim:"반석천 생태 복원 1주년, 맑은 물과 함께 흐르는 2공장",
+  truth:"2공장 방류구 인근 시료의 COD가 배출허용기준의 3.4배. 하류에서 물고기 집단 폐사 2건. 홈페이지 사진은 상류 지점에서 촬영.",
+  q:"홈페이지의 '반석천 복원' 홍보와 비교하면 어떤 유형의 그린워싱일까요?",
+  opts:["좋은 면만 보여주고 더 큰 환경 피해는 숨겼다","인증서를 잘못 표기했다","그래프의 축을 조작했다","친환경과 무관한 상을 받았다고 했다"],a:0,
+  explain:"일부 긍정적 활동을 앞세워 핵심 환경영향을 가리는 것을 '숨겨진 상충효과(hidden trade-off)'라고 부릅니다.",
+  hint:"홈 화면 사진 설명에 나온 하천 이름을 검색엔진에 검색해보세요."},
+ forest:{title:"추가성 없는 '숲 프로젝트'",where:"검색 > 위성사진 분석 기사",esg:"E",sdg:[13,15],
+  claim:"아마조니아 리프 REDD+ 프로젝트로 연 12,000 tCO₂e 상쇄",
+  truth:"프로젝트 부지는 2011년부터 국립보호구역. 그린베일이 없어도 벌채될 수 없던 숲이라 상쇄 효과가 없음. 등록번호 VCS-2417은 등록부에 존재하지 않음.",
+  q:"이 탄소상쇄 크레딧은 어떤 원칙을 위반했나요?",
+  opts:["영속성: 숲이 나중에 불에 탈 수 있다","누출: 벌채가 다른 지역으로 옮겨갔다","추가성: 사업이 없어도 어차피 보호될 숲이다","이중계산: 두 회사가 같은 크레딧을 썼다"],a:2,
+  explain:"탄소상쇄가 인정되려면 그 사업이 없었다면 일어나지 않았을 감축이어야 합니다(추가성). 이미 보호구역인 숲을 지킨다는 크레딧은 실제 감축이 0입니다.",
+  hint:"숲 프로젝트 페이지의 등록번호와 프로젝트 이름을 각각 검색해보세요."},
+ labor:{title:"숨겨진 협력사 노동 실태",where:"채용 > 공정한 일터",esg:"S",sdg:[8],
+  claim:"협력사까지 함께하는 공정한 일터",
+  truth:"베트남 협력사 3곳 감사 결과를 비공개 처리. 평균 주 68시간 근무, 최저임금 미달 사례 확인(내부 메모).",
+  q:"이 문제는 ESG 중 어느 영역이며, 어떤 SDG와 가장 직접 연결될까요?",
+  opts:["E(환경) · SDG 13 기후변화 대응","S(사회) · SDG 8 양질의 일자리와 경제성장","G(지배구조) · SDG 16 정의와 제도","E(환경) · SDG 12 책임 있는 소비·생산"],a:1,
+  explain:"공급망 노동권은 ESG의 S(사회) 영역입니다. 친환경 이미지가 있어도 협력사 노동 착취를 숨기면 지속가능경영이 아닙니다.",
+  hint:"채용 페이지에서 문단 사이 빈 공간이 넓은 곳을 마우스로 드래그해보세요."},
+ board:{title:"독립성 없는 ESG위원회",where:"검색 > 경제지 기사",esg:"G",sdg:[16],
+  claim:"ESG위원회 위원장 한도윤 (사외이사)",
+  truth:"한도윤 위원장은 한도진 대표의 친동생이자 계열사 대표. 사외이사 표기는 사실과 다름. 대표를 감시할 위원회를 대표 가족이 이끄는 구조.",
+  q:"이 지배구조의 문제는 무엇일까요?",
+  opts:["위원회 회의가 너무 자주 열린다","위원장이 환경 전공자가 아니다","감시 기구가 경영진과 이해관계로 묶여 독립성이 없다","위원회 인원이 홀수다"],a:2,
+  explain:"ESG위원회와 사외이사는 경영진을 견제하는 장치입니다. 대표의 가족이 '사외이사'로 위원장을 맡으면 견제 기능이 사라집니다(G·지배구조).",
+  hint:"회사소개 페이지에서 대표와 위원장의 이름을 비교해보고, 검색엔진에 위원장 이름을 넣어보세요."}
+};
+const PLAIN=["평범해 보인다. 다른 곳을 살펴보자.","특별히 수상한 점은 없다.","광고 문구일 뿐, 확인할 근거가 없다.","여기는 문제가 없어 보인다."];
+
+/* ---------------- state ---------------- */
+const KEY="ngf-save-v1";
+let S={found:[],wrong:0,read:["m1"],ended:null};
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function load(){try{const v=JSON.parse(localStorage.getItem(KEY)||"null");if(v&&Array.isArray(v.found))return v}catch(e){}return null}
+const has=id=>S.found.includes(id);
+
+/* ---------------- toast & modal ---------------- */
+let tt;
+function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,3600)}
+function modal(html){$("#mbox").innerHTML=html;$("#modal").hidden=false;const f=$("#mbox").querySelector("button");if(f)f.focus()}
+function closeModal(){$("#modal").hidden=true}
+$("#modal").addEventListener("click",e=>{if(e.target.id==="modal")closeModal()});
+
+/* ---------------- windows ---------------- */
+const WINS={
+ browser:{title:"브라우저",icon:"web",x:120,y:24,w:780,h:560},
+ evidence:{title:"증거함",icon:"folder",x:260,y:70,w:620,h:480},
+ mail:{title:"메일 · 익명 제보함",icon:"mail",x:180,y:50,w:640,h:440},
+ report:{title:"신고서 작성",icon:"form",x:300,y:40,w:560,h:540}
+};
+const ICONSVG={
+ web:'<svg viewBox="0 0 40 40"><rect x="3" y="6" width="34" height="28" rx="3" fill="#e9e5dc" stroke="#1e2422"/><rect x="3" y="6" width="34" height="7" rx="3" fill="#cfc8bb"/><circle cx="20" cy="23" r="7" fill="none" stroke="#2e8a4e" stroke-width="2"/><path d="M13 23h14M20 16c-3 4-3 10 0 14M20 16c3 4 3 10 0 14" stroke="#2e8a4e" fill="none"/></svg>',
+ folder:'<svg viewBox="0 0 40 40"><path d="M4 11h12l3 3h17v19H4z" fill="#f3d34a" stroke="#1e2422"/><rect x="10" y="17" width="20" height="12" fill="#fbf8f0" stroke="#1e2422" transform="rotate(-4 20 23)"/></svg>',
+ mail:'<svg viewBox="0 0 40 40"><rect x="4" y="9" width="32" height="22" rx="2" fill="#fbf8f0" stroke="#1e2422"/><path d="M4 10l16 12 16-12" fill="none" stroke="#1e2422"/></svg>',
+ form:'<svg viewBox="0 0 40 40"><rect x="8" y="4" width="24" height="32" rx="2" fill="#fbf8f0" stroke="#1e2422"/><path d="M13 12h14M13 17h14M13 22h9" stroke="#5d6560"/><circle cx="26" cy="28" r="5" fill="none" stroke="#bf3a2b" stroke-width="2"/></svg>'
+};
+let z=10;
+function buildIcons(){
+ $("#icons").innerHTML=Object.entries(WINS).map(([k,w])=>`<button class="dicon" data-open="${k}">${ICONSVG[w.icon]}<span>${w.title.split(" ·")[0]}</span>${k==="mail"?'<span class="badge" id="mailBadge" hidden>1</span>':""}${k==="evidence"?'<span class="badge" id="evBadge">0</span>':""}</button>`).join("");
+ $("#icons").addEventListener("click",e=>{const b=e.target.closest("[data-open]");if(b)openWin(b.dataset.open)});
+}
+function makeWin(k){
+ const w=WINS[k];const el=document.createElement("section");
+ el.className="win hidden";el.id="w-"+k;el.setAttribute("aria-label",w.title);
+ el.style.cssText=`left:${w.x}px;top:${w.y}px;width:${w.w}px;height:${w.h}px`;
+ el.innerHTML=`<div class="tbar"><h2>${w.title}</h2><button class="x" aria-label="닫기">✕</button></div><div class="wbody" id="b-${k}"></div>`;
+ $("#desk").appendChild(el);
+ el.addEventListener("pointerdown",()=>focusWin(k));
+ el.querySelector(".x").addEventListener("click",e=>{e.stopPropagation();el.classList.add("hidden");renderTasks()});
+ const bar=el.querySelector(".tbar");
+ bar.addEventListener("pointerdown",e=>{
+  if(e.target.closest(".x")||window.innerWidth<=760)return;
+  const r=el.getBoundingClientRect(),d=$("#desk").getBoundingClientRect();
+  const ox=e.clientX-r.left,oy=e.clientY-r.top;bar.setPointerCapture(e.pointerId);
+  const mv=ev=>{let x=ev.clientX-d.left-ox,y=ev.clientY-d.top-oy;
+   x=Math.max(-r.width+80,Math.min(d.width-80,x));y=Math.max(0,Math.min(d.height-40,y));
+   el.style.left=x+"px";el.style.top=y+"px"};
+  const up=()=>{bar.removeEventListener("pointermove",mv);bar.removeEventListener("pointerup",up)};
+  bar.addEventListener("pointermove",mv);bar.addEventListener("pointerup",up);
+ });
+}
+function fitWin(el){
+ const d=$("#desk").getBoundingClientRect();
+ if(window.innerWidth<=760)return;
+ const w=Math.min(parseFloat(el.style.width),d.width-32),h=Math.min(parseFloat(el.style.height),d.height-32);
+ el.style.width=w+"px";el.style.height=h+"px";
+ if(parseFloat(el.style.left)+w>d.width)el.style.left=Math.max(16,d.width-w-16)+"px";
+ if(parseFloat(el.style.top)+h>d.height)el.style.top=Math.max(8,d.height-h-8)+"px";
+}
+function openWin(k){const el=$("#w-"+k);el.classList.remove("hidden");fitWin(el);focusWin(k);
+ if(k==="evidence")renderEvidence();if(k==="mail")renderMail();if(k==="report")renderReport();}
+function focusWin(k){$("#w-"+k).style.zIndex=++z;renderTasks(k)}
+function renderTasks(active){
+ const open=Object.keys(WINS).filter(k=>!$("#w-"+k).classList.contains("hidden"));
+ if(!active){let m=-1;open.forEach(k=>{const zz=+$("#w-"+k).style.zIndex||0;if(zz>m){m=zz;active=k}})}
+ $("#tasks").innerHTML=Object.keys(WINS).map(k=>`<button data-t="${k}" class="${k===active&&open.includes(k)?"on":""}">${WINS[k].title.split(" ·")[0]}${k==="evidence"?" "+S.found.length:""}</button>`).join("");
+}
+$("#tasks").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(b)openWin(b.dataset.t)});
+
+/* ---------------- browser ---------------- */
+let route="gv/",hist=[],inspect=false;
+function buildBrowser(){
+ $("#b-browser").innerHTML=`<div class="bwrap">
+  <div class="btool">
+   <button class="nb" id="bBack" aria-label="뒤로">←</button>
+   <form id="addrForm"><input id="addr" aria-label="주소" spellcheck="false"><button>이동</button></form>
+   <button class="inspect" id="inspBtn" aria-pressed="false"><svg width="14" height="14" viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="4.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 10l4 4" stroke="currentColor" stroke-width="2"/></svg>조사 모드</button>
+  </div>
+  <div class="bmarks"><button data-go="gv/">★ GreenVeil 공식</button><button data-go="sk/">Seekr 검색</button></div>
+  <div class="view" id="view"></div></div>`;
+ $("#bBack").onclick=()=>{if(hist.length){route=hist.pop();renderView()}};
+ $("#addrForm").addEventListener("submit",e=>{e.preventDefault();go(parseAddr($("#addr").value))});
+ $("#inspBtn").onclick=()=>setInspect(!inspect);
+ $(".bmarks").addEventListener("click",e=>{const b=e.target.closest("[data-go]");if(b)go(b.dataset.go)});
+ const v=$("#view");
+ v.addEventListener("click",onViewClick);
+ v.addEventListener("submit",e=>{const f=e.target.closest(".sk-form");if(f){e.preventDefault();const q=f.querySelector("input").value.trim();go(q?"sk/?q="+encodeURIComponent(q):"sk/")}});
+}
+function setInspect(on){inspect=on;$("#inspBtn").setAttribute("aria-pressed",on);$("#view").classList.toggle("inspecting",on);
+ toast(on?"조사 모드: 수상한 문구나 요소를 클릭하세요. 링크 이동은 잠시 멈춥니다.":"조사 모드 해제: 링크로 이동할 수 있습니다.")}
+function parseAddr(a){
+ a=a.trim();const low=a.toLowerCase();
+ if(low.includes("greenveil")){let p=(low.split("greenveil.co.kr")[1]||"/").split(/[?#]/)[0];if(!p.startsWith("/"))p="/"+p;if(p.length>1)p=p.replace(/\/+$/,"");return "gv"+p}
+ if(low.includes("seekr")){const m=a.match(/[?&]q=([^&]*)/);return m?"sk/?q="+m[1]:"sk/"}
+ return a?"sk/?q="+encodeURIComponent(a):"sk/";
+}
+function go(r){if(r!==route)hist.push(route);route=r;renderView()}
+function addrOf(r){if(r.startsWith("gv")){const p=r.slice(2);return "https://www.greenveil.co.kr"+(p==="/"?"/":p)}const q=r.split("?q=")[1];return "https://seekr.net/"+(q?"search?q="+q:"")}
+function renderView(){
+ $("#addr").value=decodeURIComponent(addrOf(route));
+ const v=$("#view");
+ v.innerHTML=route.startsWith("gv")?site(route.slice(2)||"/"):seekr(route);
+ v.scrollTop=0;
+}
+function onViewClick(e){
+ if(inspect){
+  e.preventDefault();
+  const s=e.target.closest("[data-clue]");
+  if(s){const id=s.dataset.clue;if(has(id))toast("이미 확보한 증거다. 증거함에서 확인할 수 있다.");else openQuiz(id);return}
+  const f=e.target.closest("[data-inspect]");
+  if(f){toast(f.dataset.inspect);return}
+  toast(PLAIN[Math.floor(Math.random()*PLAIN.length)]);return;
+ }
+ const n=e.target.closest("[data-nav]");if(n){e.preventDefault();go(n.dataset.nav);return}
+ const q=e.target.closest("[data-q]");if(q){e.preventDefault();go("sk/?q="+encodeURIComponent(q.dataset.q));return}
+ const a=e.target.closest("[data-toast]");if(a){e.preventDefault();toast(a.dataset.toast)}
+}
+
+/* ---------------- illustrations ---------------- */
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const GRAIN=(id)=>`<filter id="${id}"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>`;
+function turbine(x,y,s,gy,d){
+ const L=34*s;let bl="";
+ for(const a of [0,120,240])bl+=`<path transform="rotate(${a} ${x} ${y})" d="M${x} ${y} L${x-2.2*s} ${y-7*s} L${x-.6*s} ${y-L} L${x+.8*s} ${y-L+2*s} L${x+1.8*s} ${y-7*s}Z" fill="#fbfbf8" stroke="#c9cfc9" stroke-width=".4"/>`;
+ return `<polygon points="${x-1*s},${y} ${x+1*s},${y} ${x+2.1*s},${gy} ${x-2.1*s},${gy}" fill="#f2f3ef"/><polygon points="${x+.2*s},${y} ${x+1*s},${y} ${x+2.1*s},${gy} ${x+.6*s},${gy}" fill="#d9ddd6"/><g class="blades" style="transform-origin:${x}px ${y}px;--d:${d}s">${bl}</g><circle cx="${x}" cy="${y}" r="${2.2*s}" fill="#e7e9e4"/>`;
+}
+function heroScene(){
+ let pv="";
+ for(let r=0;r<4;r++){const y0=212+r*25,h=13+r*4,pw=34+r*9,g=5+r*2,sk=5+r*2;
+  for(let x=-30+(r%2)*14;x<500;x+=pw+g){pv+=`<polygon points="${x},${y0+h} ${x+pw},${y0+h} ${x+pw+sk},${y0} ${x+sk},${y0}" fill="url(#pvg)" stroke="#16263a" stroke-width=".8"/><line x1="${x+pw/2}" y1="${y0+h}" x2="${x+pw/2+sk}" y2="${y0}" stroke="#7fa3c7" stroke-width=".5" opacity=".6"/><line x1="${x+sk/2}" y1="${y0+h/2}" x2="${x+pw+sk/2}" y2="${y0+h/2}" stroke="#7fa3c7" stroke-width=".5" opacity=".6"/><line x1="${x+4}" y1="${y0+h}" x2="${x+4}" y2="${y0+h+5}" stroke="#55606a" stroke-width="1.2"/>`}}
+ return `<svg viewBox="0 0 480 320" role="img" aria-label="태양광 패널과 풍력 발전기가 있는 들판의 아침 풍경">
+ <defs><linearGradient id="hsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fd0e6"/><stop offset=".55" stop-color="#d9eef0"/><stop offset="1" stop-color="#fbe7c4"/></linearGradient>
+ <radialGradient id="hsun"><stop offset="0" stop-color="#fffbe8"/><stop offset=".25" stop-color="#fff2c8" stop-opacity=".9"/><stop offset="1" stop-color="#fff2c8" stop-opacity="0"/></radialGradient>
+ <linearGradient id="hfield" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fbf6e"/><stop offset="1" stop-color="#4e8a44"/></linearGradient>
+ <linearGradient id="pvg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a6f9a"/><stop offset=".45" stop-color="#22385a"/><stop offset=".55" stop-color="#9fbbd8"/><stop offset=".65" stop-color="#22385a"/><stop offset="1" stop-color="#16263f"/></linearGradient>
+ <radialGradient id="hvig" cx=".5" cy=".45" r=".75"><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#0b2a1a" stop-opacity=".35"/></radialGradient>${GRAIN("hg")}</defs>
+ <rect width="480" height="320" fill="url(#hsky)"/><circle cx="372" cy="150" r="130" fill="url(#hsun)"/><circle cx="372" cy="150" r="20" fill="#fffaf0"/>
+ <g fill="#fff" opacity=".75"><ellipse cx="90" cy="60" rx="46" ry="10"/><ellipse cx="120" cy="54" rx="30" ry="9"/><ellipse cx="270" cy="88" rx="38" ry="7"/></g>
+ <path d="M0 176 C60 150 120 160 190 148 C260 136 330 158 400 146 C440 140 470 150 480 152 V210 H0Z" fill="#a9c9b0" opacity=".85"/>
+ <path d="M0 190 C80 170 150 186 230 176 C320 166 400 188 480 178 V230 H0Z" fill="#79ad7d"/>
+ ${turbine(118,96,1.6,186,8)}${turbine(196,118,1.15,180,6.5)}${turbine(262,128,.85,178,7.2)}${turbine(320,134,.6,176,5.8)}
+ <path d="M0 202 C120 192 300 206 480 196 V320 H0Z" fill="url(#hfield)"/>${pv}
+ <path d="M210 70 q4 -4 8 0 q4 -4 8 0 M236 80 q3 -3 6 0 q3 -3 6 0" stroke="#3b4f52" stroke-width="1.2" fill="none"/>
+ <rect width="480" height="320" fill="url(#hvig)"/><rect width="480" height="320" filter="url(#hg)" opacity=".09"/></svg>`;
+}
+function riverScene(exposed){
+ const r=rng(7);let trees="";
+ for(let i=0;i<70;i++){const x=r()*600,y=128+r()*22,s=8+r()*12;trees+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${s.toFixed(1)}" fill="${["#3f7a4a","#4f8c55","#356a40","#5b9a5e"][i%4]}"/>`}
+ let glints="";for(let i=0;i<22;i++){const y=180+r()*90,x=230+r()*(140+(y-180)*2.2)-(y-180)*1.1;glints+=`<line x1="${x.toFixed(0)}" y1="${y.toFixed(0)}" x2="${(x+8+r()*16).toFixed(0)}" y2="${y.toFixed(0)}" stroke="#fff" stroke-width="1.2" opacity="${(.3+r()*.5).toFixed(2)}"/>`}
+ const w1=exposed?"#7e8a6a":"#9ad3df",w2=exposed?"#5b6247":"#4f9db3";
+ return `<svg viewBox="0 0 600 280" role="img" aria-label="공장이 보이는 맑은 하천 풍경">
+ <defs><linearGradient id="rsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bfe2f1"/><stop offset="1" stop-color="#eef7f1"/></linearGradient>
+ <linearGradient id="rwat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${w1}"/><stop offset="1" stop-color="${w2}"/></linearGradient>
+ <linearGradient id="rbank" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8dbf6c"/><stop offset="1" stop-color="#4c8241"/></linearGradient>${GRAIN("rg")}</defs>
+ <rect width="600" height="280" fill="url(#rsky)"/><path d="M0 130 C120 104 240 118 360 102 C460 92 540 108 600 104 V160 H0Z" fill="#b5d2bd"/>
+ <g><rect x="410" y="88" width="120" height="48" fill="#cfd4cd"/><rect x="420" y="72" width="60" height="18" fill="#bfc5bd"/><rect x="498" y="40" width="9" height="56" fill="#b0b6ae"/><rect x="498" y="44" width="9" height="4" fill="#bf3a2b"/>
+ <g fill="#fff" opacity=".85"><ellipse cx="506" cy="32" rx="12" ry="8"/><ellipse cx="520" cy="22" rx="16" ry="9"/><ellipse cx="540" cy="14" rx="20" ry="9" opacity=".7"/></g>
+ <g fill="#9aa39a">${[0,1,2,3,4,5,6].map(i=>`<rect x="${418+i*15}" y="100" width="8" height="6"/>`).join("")}</g><text x="470" y="128" font-size="9" fill="#7d867d" text-anchor="middle" font-family="sans-serif">GREENVEIL 2</text></g>
+ ${trees}<path d="M0 160 H600 V280 H0Z" fill="url(#rbank)"/>
+ <path d="M262 156 C300 156 330 158 350 160 C390 190 470 230 560 280 H40 C120 236 210 190 262 156Z" fill="url(#rwat)"/>${glints}
+ <g fill="#9a9d92"><ellipse cx="96" cy="262" rx="26" ry="9"/><ellipse cx="128" cy="270" rx="14" ry="6" fill="#b4b7ac"/><ellipse cx="528" cy="250" rx="18" ry="7"/></g>
+ <g stroke="#3d6e35" stroke-width="1.3" fill="none">${[20,34,48,560,572,584].map(x=>`<path d="M${x} 280 q-3 -18 2 -30 M${x+4} 280 q2 -14 -1 -24"/>`).join("")}</g>
+ <text x="590" y="272" font-size="10" fill="#fff" opacity=".75" text-anchor="end" font-family="sans-serif">© GreenVeil PR</text>
+ <rect width="600" height="280" filter="url(#rg)" opacity=".08"/></svg>`;
+}
+function donut(exposed){
+ const segs=exposed?[[8,"#2e8a4e","자가 태양광"],[92,"#6b706c","화력 기반 계약 전력"]]:[[41,"#2e8a4e","풍력"],[38,"#76bd86","태양광"],[21,"#b9dfb9","기타 재생에너지"]];
+ const R=54,C=2*Math.PI*R;let acc=0,arcs="";
+ segs.forEach(([v,c])=>{const len=C*v/100;arcs+=`<circle cx="70" cy="70" r="${R}" fill="none" stroke="${c}" stroke-width="22" stroke-dasharray="${len.toFixed(2)} ${(C-len).toFixed(2)}" stroke-dashoffset="${(-acc).toFixed(2)}" transform="rotate(-90 70 70)"/>`;acc+=len});
+ return `<svg viewBox="0 0 140 140" width="140" height="140" role="img" aria-label="전력 구성 도넛 차트">${arcs}<text x="70" y="70" text-anchor="middle" font-family="Gowun Batang,serif" font-size="24" font-weight="700" fill="${exposed?"#bf3a2b":"#2e8a4e"}">${exposed?"8%":"100%"}</text><text x="70" y="88" text-anchor="middle" font-size="10" fill="#4c6457" font-family="sans-serif">재생에너지</text></svg>
+ <ul class="legend">${segs.map(([v,c,t])=>`<li><i style="background:${c}"></i>${t}<b>${v}%</b></li>`).join("")}</ul>`;
+}
+function canopy(exposed){
+ const r=rng(42);let t="";
+ for(let i=0;i<420;i++){const x=r()*600,y=r()*240,s=6+r()*13;t+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${s.toFixed(1)}" fill="${["#1f5a2e","#2b6d38","#367d42","#24502b","#3f8a4a"][i%5]}" opacity=".95"/>`}
+ return `<svg viewBox="0 0 600 240" role="img" aria-label="열대우림 위성 사진">${GRAIN("cg")}<rect width="600" height="240" fill="#173f22"/>${t}
+ <path d="M-10 170 C80 150 120 200 210 180 S360 120 430 150 S560 190 610 160" stroke="#a88d5c" stroke-width="7" fill="none" opacity=".85"/>
+ <rect width="600" height="240" filter="url(#cg)" opacity=".12"/>
+ ${exposed?`<rect x="60" y="26" width="470" height="190" fill="#bf3a2b" fill-opacity=".12" stroke="#ffd34a" stroke-width="2.5" stroke-dasharray="8 6"/><rect x="66" y="32" width="210" height="22" fill="#000a"/><text x="74" y="47" font-size="12" fill="#ffd34a" font-family="monospace">국립보호구역 경계 · 2011 지정</text>`:`<rect x="210" y="70" width="180" height="100" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="4 4"/><text x="216" y="86" font-size="11" fill="#fff" font-family="monospace">AMAZONIA LEAF</text>`}
+ <g font-family="monospace" font-size="10" fill="#fff"><rect x="8" y="8" width="196" height="18" fill="#0008"/><text x="14" y="21">SAT · 2025.07 · -3.42, -62.1</text>
+ <rect x="490" y="214" width="100" height="18" fill="#0008"/><line x1="498" y1="226" x2="548" y2="226" stroke="#fff" stroke-width="2"/><text x="554" y="229">500 m</text></g></svg>`;
+}
+function boxSVG(){return `<svg viewBox="0 0 140 140" role="img" aria-label="크라프트 종이 상자"><ellipse cx="70" cy="124" rx="52" ry="8" fill="#0002"/>
+ <polygon points="70,22 124,46 70,70 16,46" fill="#e2c595"/><polygon points="16,46 70,70 70,124 16,100" fill="#c99d63"/><polygon points="124,46 70,70 70,124 124,100" fill="#b6884e"/>
+ <polygon points="58,27 112,51 112,58 58,34" fill="#f3e2c2" opacity=".7"/>
+ <path d="M28 76 C28 62 36 56 48 55 C48 68 42 76 30 77Z" fill="#2e8a4e"/><text x="24" y="96" font-size="10" font-weight="700" fill="#4a3a1e" transform="skewY(24) translate(0 -14)" font-family="sans-serif">ECOPAK</text></svg>`}
+function bottleSVG(){return `<svg viewBox="0 0 140 140" role="img" aria-label="생수병"><defs><linearGradient id="bt" x1="0" x2="1"><stop offset="0" stop-color="#cfe9f1"/><stop offset=".3" stop-color="#f4fbfd"/><stop offset="1" stop-color="#9ccbd9"/></linearGradient></defs><ellipse cx="70" cy="128" rx="26" ry="5" fill="#0002"/><rect x="62" y="12" width="16" height="10" rx="2" fill="#2e8a4e"/><path d="M62 22h16c0 8 12 12 12 26v70c0 6-4 9-10 9H60c-6 0-10-3-10-9V48c0-14 12-18 12-26z" fill="url(#bt)" stroke="#8fbfcd"/><rect x="50" y="64" width="40" height="28" fill="#2e8a4e"/><text x="70" y="82" font-size="9" fill="#fff" text-anchor="middle" font-family="sans-serif">GREEN</text></svg>`}
+function avatar(h,hair){return `<svg viewBox="0 0 46 46"><circle cx="23" cy="23" r="23" fill="hsl(${h} 30% 82%)"/><path d="M6 46c2-10 9-14 17-14s15 4 17 14z" fill="hsl(${h} 25% 35%)"/><circle cx="23" cy="19" r="9" fill="#f0d2b6"/><path d="${hair}" fill="#2b2522"/></svg>`}
+
+/* ---------------- company site ---------------- */
+function sus(id,text,tag){tag=tag||"span";
+ return has(id)?`<${tag} class="sus exposed" data-clue="${id}">${text}</${tag}><span class="truth">${esc(CLUES[id].truth)}</span>`:`<${tag} class="sus" data-clue="${id}">${text}</${tag}>`}
+const LEAF='<svg viewBox="0 0 26 26"><path d="M4 22C4 10 12 4 23 3c0 12-6 19-17 19z" fill="#2e8a4e"/><path d="M5 21C10 15 14 11 20 6" stroke="#e9f6ec" stroke-width="1.6" fill="none"/></svg>';
+function site(p){
+ const nav=[["/","홈"],["/products","제품"],["/report","지속가능경영"],["/forest","숲 프로젝트"],["/careers","채용"],["/about","회사소개"]];
+ const head=`<header class="s-head"><a class="logo" href="#" data-nav="gv/">${LEAF}GreenVeil</a><nav class="s-nav">${nav.map(([h,t])=>`<a href="#" data-nav="gv${h}" class="${h===p?"cur":""}">${t}</a>`).join("")}</nav></header>`;
+ const foot=`<footer class="s-foot">© 2026 GreenVeil Solutions Co., Ltd. · 경기도 반석시 그린로 12 · <span data-inspect="고객센터 번호 대신 '문의는 홈페이지로'라고만 적혀 있다. 소통 창구가 좁다.">고객 문의는 홈페이지로</span></footer>`;
+ let body;
+ const apology=S.ended==="official"?`<div class="apology"><span class="eyebrow" style="color:var(--stamp)">공지</span><h2 style="font-family:var(--f-disp);margin:0">대국민 사과 및 시정 계획</h2><p>그린베일은 환경부·공정거래위원회 조사 결과를 겸허히 받아들입니다. 오해를 부르는 환경성 표시를 전면 삭제하고, 실제 전력 사용 내역과 Scope 3 배출량, 협력사 감사 결과를 공개하겠습니다. ESG위원회는 독립 사외이사 중심으로 재구성합니다.</p></div>`:"";
+ if(p==="/"){
+  body=`${apology}<section class="hero"><div class="hero-txt"><span class="eyebrow">Net Zero 2030</span>
+   <h1>지구를 위한 선택,<br>그린베일은 이미 시작했습니다.</h1>
+   <p>그린베일은 2024년부터 ${sus("rec","모든 사업장을 100% 재생에너지로 운영")}합니다. 포장재부터 공급망까지, 우리가 만드는 모든 것이 초록이 되도록.</p>
+   <div class="ctas"><a href="#" class="cta" data-nav="gv/report">지속가능경영 보고서</a><a href="#" class="cta cta2" data-nav="gv/products">에코팩 보기</a></div></div>
+   <figure class="hero-img" data-inspect="'이해를 돕기 위한 연출'이라는 작은 글씨. 실제 사진이 아니라는 뜻이다. 공장 전력을 정말 이 단지에서 얻고 있을까?">${heroScene()}<figcaption>반석 1공장 태양광·풍력 단지<small>*이미지는 이해를 돕기 위한 연출입니다</small></figcaption></figure></section>
+   <div class="stats">
+    <div class="stat" data-inspect="'최대'라는 말과 별표(*)뿐, 기준 연도와 범위는 지속가능경영 페이지를 봐야 할 것 같다."><b>-48%*</b><span>탄소 배출 감축 (최대)</span></div>
+    <div class="stat" data-inspect="5만 그루를 심었다는 숲. 숲 프로젝트 페이지에 자세한 내용이 있겠지."><b>50,000</b><span>그루의 숲을 지킵니다</span></div>
+    <div class="stat" data-inspect="무엇의 재활용률인지 적혀 있지 않다. 사무실 종이일 수도 있다."><b>96%</b><span>재활용률</span></div>
+   </div>
+   <section class="two"><div class="s-sec"><span class="eyebrow">Energy Mix</span><h2>2025 사업장 전력 구성</h2><p>바람과 햇빛으로 공장을 돌립니다. 그린베일의 모든 생산라인은 재생에너지로 가동됩니다.</p>${has("rec")?`<span class="truth">${esc(CLUES.rec.truth)}</span>`:`<p class="fine" data-inspect="별표의 'REC 포함 기준'. REC가 무엇인지 검색해볼 만하다.">* REC 포함 기준</p>`}</div>
+    <div class="donut-card" data-inspect="합계가 정확히 100%. 너무 깔끔한 숫자다. 아래 작은 별표를 확인해보자.">${donut(has("rec"))}</div></section>
+   <section class="s-sec"><span class="eyebrow">Roadmap</span><h2>넷제로까지의 여정</h2>
+    <ol class="road"><li data-inspect="RE100은 실제 사용 전력 기준이다. '달성'의 근거가 공개돼 있지 않다."><b>2024</b><span>RE100 달성</span><small>완료</small></li><li><b>2026</b><span>플라스틱 제로 포장</span><small>진행 중</small></li><li data-inspect="공급망 감축 계획. 그런데 공급망 배출(Scope 3)은 아직 '산정 중'이라고 했다."><b>2028</b><span>공급망 배출 50% 감축</span><small>계획</small></li><li><b>2030</b><span>넷제로 달성</span><small>목표</small></li></ol></section>
+   <figure class="river" style="margin:0" data-inspect="하천 이름과 공장 이름이 함께 나온다. 이 하천 이름을 검색해보면 어떨까?">${riverScene(has("river"))}<figcaption>반석천 생태 복원 1주년 · 그린베일 2공장과 함께 흐르는 맑은 물</figcaption></figure>
+   ${has("river")?`<span class="truth">${esc(CLUES.river.truth)}</span>`:""}
+   <div class="ticker" data-inspect="수상 경력. 상을 준 곳이 어디인지는 적혀 있지 않다.">NEWS · 그린베일, '2026 대한민국 친환경 경영 대상' 3년 연속 수상 · 에코팩 누적 판매 1,200만 개 돌파</div>`;
+ }else if(p==="/products"){
+  body=`<section class="s-sec"><span class="eyebrow">Products</span><h2>자연으로 돌아가는 포장, 에코팩</h2></section>
+   <div class="prod"><div class="box">${boxSVG()}</div><div class="s-sec">
+    ${has("badge")?`<div>${sus("badge",`<span class="gbadge">${LEAF}GV-Green 인증</span>`)}</div>`:`<div><span class="gbadge sus" data-clue="badge">${LEAF}GV-Green 인증</span></div>`}
+    <p data-inspect="'100% 생분해'라는데 어떤 조건에서인지 적혀 있지 않다. 옆의 인증 마크부터 확인해보자."><b>100% 생분해</b> 소재로 만든 택배 완충재와 식품 용기. 사용 후 자연으로 돌아갑니다.</p>
+    <p style="font-size:13px;color:#5b7365" data-inspect="'국내 최초'의 근거가 없다. 그래도 핵심 문제는 아닌 것 같다.">국내 최초 친환경 통합 포장 솔루션 · B2B 문의 환영</p></div></div>
+   <div class="prod"><div class="box">${bottleSVG()}</div><div class="s-sec"><p data-inspect="재생 플라스틱 30%. 수치가 구체적이고 비율도 현실적이다. 문제없어 보인다."><b>그린보틀</b> · 재생 플라스틱 30% 함유 생수병</p></div></div>`;
+ }else if(p==="/report"){
+  body=`<section class="s-sec"><span class="eyebrow">Sustainability</span><h2>숫자로 보는 그린베일의 감축</h2><p>지난 5년간 그린베일은 탄소 배출을 대폭 감축했습니다. 아래 그래프가 그 여정을 보여줍니다.</p></section>
+   <div class="chart">${chartSVG(has("chart"))}</div>
+   ${has("chart")?`<span class="truth">${esc(CLUES.chart.truth)}</span>`:""}
+   <table class="t"><thead><tr><th>구분</th><th>2021</th><th>2025</th></tr></thead><tbody>
+    <tr><td>Scope 1+2 (tCO₂e)</td><td>10,420</td><td>9,750</td></tr>
+    <tr data-inspect="공급망·운송·폐기를 합친 Scope 3는 보통 기업 배출의 대부분을 차지한다. 그런데 '산정 중'? 검색해서 개념을 확인해보자."><td>Scope 3 (tCO₂e)</td><td colspan="2" style="color:#8a9b90">산정 중입니다</td></tr>
+   </tbody></table>
+   <p style="font-size:13px"><a href="#" data-toast="파일 서버 점검 중입니다. 잠시 후 다시 시도해주세요." data-inspect="PDF 링크가 작동하지 않는다. 원문 보고서는 볼 수 없다.">2025 지속가능경영보고서 PDF 내려받기</a></p>`;
+ }else if(p==="/forest"){
+  body=`<section class="forest"><span class="eyebrow" style="color:#bfe6c9">Carbon Offset</span><h2 style="font-family:var(--f-disp);margin:0;font-size:26px">아마존의 숨결을 지킵니다</h2>
+   <p style="margin:0;line-height:1.75">그린베일은 브라질 아마조니아 리프 REDD+ 프로젝트에 투자해 5만 그루의 숲을 벌채 위험으로부터 보호하고, 매년 12,000 tCO₂e를 상쇄합니다.</p>
+   <p style="margin:0" data-inspect="등록번호가 있다. 국제 등록부에 있다면 검색으로 확인되겠지.">프로젝트 등록번호 <code>VCS-2417</code></p>
+   <p style="margin:0;font-size:13px;opacity:.85" data-inspect="프로젝트 이름. 현지 보도나 위성 분석이 있는지 검색해볼 수 있다.">사업명: 아마조니아 리프 (Amazonia Leaf)</p></section>
+   <figure class="sat" data-inspect="프로젝트 구역의 위성 사진. 이 숲이 원래 어떤 지위였는지는 나와 있지 않다.">${canopy(has("forest"))}<figcaption>프로젝트 부지 위성 이미지</figcaption></figure>
+   ${has("forest")?`<span class="truth">${esc(CLUES.forest.truth)}</span>`:""}`;
+ }else if(p==="/careers"){
+  body=`<section class="s-sec"><span class="eyebrow">Careers</span><h2>협력사까지 함께하는 공정한 일터</h2>
+   <p>그린베일은 국내외 모든 협력사와 함께 인권과 안전을 최우선으로 생각합니다. 정기적인 공급망 감사를 통해 공정한 노동 환경을 만들어갑니다.</p>
+   <p class="ghost ${has("labor")?"exposed":""}" data-clue="labor" data-inspect="">※ [내부용·삭제 예정] 베트남 협력사 3곳 2025 감사 결과 비공개 처리. 평균 주 68시간, 최저임금 미달 확인. 대외 문구는 '정기 감사 진행'으로 통일.</p>
+   ${has("labor")?`<span class="truth">${esc(CLUES.labor.truth)}</span>`:""}
+   <p data-inspect="'정기적인 감사'라는데 결과는 어디에도 없다. 그런데 이 위쪽 빈 공간이 유난히 넓다. 드래그해볼까?">감사 결과는 투명하게 관리됩니다.</p></section>
+   <div class="s-sec"><div class="job"><b>ESG 커뮤니케이션 매니저</b><span data-inspect="ESG '커뮤니케이션' 담당을 뽑는다. ESG '실무' 공고는 없다.">홍보팀 · 정규직</span></div>
+   <div class="job"><b>생산관리 (반석 2공장)</b><span>생산본부 · 정규직</span></div></div>`;
+ }else if(p==="/about"){
+  body=`<section class="s-sec"><span class="eyebrow">About</span><h2>그린베일을 이끄는 사람들</h2><p>투명하고 독립적인 지배구조로 지속가능경영을 실천합니다.</p></section>
+   <div class="people">
+    <div class="person" data-inspect="대표이사 한도진. 아래 위원장과 성이 같고 이름도 비슷하다."><div class="av">${avatar(150,"M14 18c0-8 5-11 9-11s10 3 9 11c-2-4-6-5-9-5s-7 1-9 5z")}</div><b>한도진</b><small>대표이사 · CEO</small></div>
+    <div class="person" data-inspect="ESG위원회 위원장 한도윤, '사외이사'라고 적혀 있다. 대표와 무슨 관계일까? 검색해보자."><div class="av">${avatar(30,"M14 19c0-8 5-12 9-12s9 3 9 12c-1-3-4-6-9-6s-7 2-9 6z")}</div><b>한도윤</b><small>ESG위원회 위원장 · 사외이사</small></div>
+    <div class="person" data-inspect="재무 담당 임원. 특별한 점은 보이지 않는다."><div class="av">${avatar(210,"M13 22c-1-10 4-15 10-15s11 5 10 15c-1-6-5-8-10-8s-9 2-10 8z")}</div><b>오세린</b><small>최고재무책임자 · CFO</small></div>
+   </div>${has("board")?`<span class="truth">${esc(CLUES.board.truth)}</span>`:""}`;
+ }else if(p==="/internal"){
+  return `<div class="errpage"><b>403</b><span>Forbidden · 사내망에서만 접근 가능합니다.</span><span style="color:#888">누군가 이 주소를 알고 있었다는 건 흥미롭다.</span></div>`;
+ }else{
+  return `<div class="errpage"><b>404</b><span>페이지를 찾을 수 없습니다: ${esc(p)}</span></div>`;
+ }
+ const lv=[2,3,4,5,6,7].filter(n=>S.found.length>=n).map(n=>"c"+n).join(" ");
+ return `<div class="site ${lv}">${head}<main class="s-main">${body}</main>${foot}</div>`;
+}
+function chartSVG(honest){
+ const yrs=[2021,2022,2023,2024,2025],a=[10420,10180,9980,9860,9750],b=[21000,21900,22800,23700,24780];
+ const W=560,H=250,L=70,R=18,T=26,B=40,pw=W-L-R,ph=H-T-B;
+ const lo=honest?0:9600,hi=honest?36000:10500,ticks=honest?[0,9000,18000,27000,36000]:[9600,9800,10000,10200,10400];
+ const y=v=>T+ph-(v-lo)/(hi-lo)*ph,bw=pw/5*.55;
+ let g=`<text class="yl" x="${L}" y="16">${honest?"총배출 (Scope 1+2+3, tCO₂e)":"탄소 배출량 (tCO₂e)"}</text>`;
+ let lab="";
+ ticks.forEach(t=>{g+=`<line class="grid" x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}"/>`;lab+=`<text class="tl" x="${L-8}" y="${y(t)+4}" text-anchor="end">${t.toLocaleString()}</text>`});
+ g+=honest?`<g>${lab}</g>`:`<g class="sus" data-clue="chart"><rect x="0" y="${T-6}" width="${L-2}" height="${ph+12}" fill="transparent"/>${lab}</g>`;
+ yrs.forEach((yr,i)=>{const cx=L+pw/5*(i+.5),x=cx-bw/2;
+  g+=`<rect class="b12" x="${x}" y="${y(a[i])}" width="${bw}" height="${y(lo)-y(a[i])}" rx="2"/>`;
+  if(honest)g+=`<rect class="b3" x="${x}" y="${y(a[i]+b[i])}" width="${bw}" height="${y(a[i])-y(a[i]+b[i])}" rx="2"/>`;
+  g+=`<text class="tl" x="${cx}" y="${H-16}" text-anchor="middle">${yr}</text>`;
+ });
+ if(honest)g+=`<rect class="b12" x="${W-196}" y="8" width="10" height="10"/><text class="tl" x="${W-182}" y="17">Scope 1+2</text><rect class="b3" x="${W-112}" y="8" width="10" height="10"/><text class="tl" x="${W-98}" y="17">Scope 3</text><text class="cap" x="${L}" y="${H-2}">2021 → 2025 총배출 +9.9%</text>`;
+ return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="연도별 탄소 배출 그래프">${g}</svg>`;
+}
+
+/* ---------------- search engine ---------------- */
+const R=(url,title,text,date)=>({url,title,text,date});
+const SEARCH=[
+ {k:["반석천","2공장","폐수","물고기"],res:()=>[
+  R("news.banseok-ilbo.kr › 사회","반석천 하류 물고기 수천 마리 집단 폐사… 주민들 '공장 방류구 의심'",`반석시 반석천 하류에서 올해만 두 차례 물고기 집단 폐사가 발생했다. 주민 대책위가 의뢰한 수질 검사에서 ${sus("river","그린베일 2공장 방류구 인근 시료의 화학적 산소요구량(COD)이 배출허용기준의 3.4배")}로 나타났다. 회사 측은 '조사에 성실히 협조하겠다'고 밝혔다.`,"2026.08.21"),
+  R("www.greenveil.co.kr","반석천 생태 복원 1주년 | GreenVeil","그린베일 2공장과 함께 흐르는 맑은 물. 지역사회와 함께하는 생태 복원 캠페인.","2026.05.02"),
+  R("cafe.banseok-mom.net","반석천 상류는 깨끗한데 하류 냄새 심해요","산책로 사진은 다 상류 쪽에서 찍은 거래요. 2공장 지나고 나면 물 색이 달라요…","2026.07.30")]},
+ {k:["vcs-2417","vcs2417"],none:"국제 탄소크레딧 등록부(가상)와 연동된 결과 중 'VCS-2417'에 해당하는 프로젝트가 없습니다.",sugg:["아마조니아 리프","탄소상쇄 추가성"]},
+ {k:["아마조니아","amazonia","리프"],res:()=>[
+  R("www.earthwatch-lab.org › 분석","위성사진 분석: '아마조니아 리프' 부지, 2011년부터 국립보호구역",`위성 영상과 브라질 정부 고시를 대조한 결과, ${sus("forest","기업들이 '벌채 위기에서 구했다'고 홍보하는 아마조니아 리프 부지는 이미 2011년 국립보호구역으로 지정된 곳")}이었다. 보고서는 이 크레딧이 실제 감축 효과가 없다고 지적했다.`,"2026.03.14"),
+  R("www.greenveil.co.kr › forest","숲 프로젝트 | GreenVeil","아마존의 숨결을 지킵니다. 5만 그루, 연 12,000 tCO₂e 상쇄.","")]},
+ {k:["한도윤"],res:()=>[
+  R("www.bizdaily.kr › 기업","그린베일 ESG위원장, 대표의 친동생… '사외이사' 표기 논란",`${sus("board","그린베일 ESG위원회 위원장 한도윤 씨는 한도진 대표의 친동생이자 계열사 그린베일물류 대표")}인 것으로 확인됐다. 회사 홈페이지는 그를 '사외이사'로 소개하고 있다. 지배구조 전문가는 '경영진을 감시해야 할 위원회를 오너 일가가 이끄는 구조'라고 지적했다.`,"2026.06.09"),
+  R("www.greenveil-logis.co.kr","그린베일물류 | 대표이사 인사말","안녕하십니까, 그린베일물류 대표이사 한도윤입니다.","")]},
+ {k:["한도진"],res:()=>[R("www.bizdaily.kr › 인터뷰","[CEO 인터뷰] 한도진 그린베일 대표 \"친환경은 비용이 아니라 브랜드\"","창업 12년 만에 매출 3배 성장을 이끈 한도진 대표는 'ESG는 결국 소비자의 마음을 사는 일'이라고 말했다.","2025.11.02")]},
+ {k:["gv-green","gvgreen","gv그린"],res:()=>[
+  R("www.greenveil.co.kr › products","에코팩 | GreenVeil","GV-Green 인증 · 100% 생분해","" ),
+  R("www.greenveil.co.kr › esg-center","GV-Green 인증 제도 안내 | 그린베일 ESG센터","GV-Green은 그린베일 ESG센터가 자사 제품의 친환경성을 심사해 부여하는 인증입니다. 심사위원: 그린베일 ESG센터 연구원 3인.","")],meta:"greenveil.co.kr 외의 결과가 없습니다."},
+ {k:["생분해","pla","에코팩","ecopak"],res:()=>[R("www.recycle-info.or.kr › 칼럼","'생분해 플라스틱'의 함정: 58℃ 퇴비화 시설이 없다면","PLA 등 생분해 플라스틱 상당수는 고온 산업용 퇴비화 조건에서만 분해되고, 일반 매립지나 바다에서는 오래 남습니다. 별도 수거 체계가 없으면 일반 플라스틱과 함께 소각되는 경우가 많습니다.","2026.02.11")]},
+ {k:["rec","재생에너지인증서","재생에너지 인증서","re100"],res:()=>[R("www.energy-edu.kr › 용어","REC(재생에너지 공급인증서)란?","REC는 재생에너지 발전의 환경적 가치를 인증하는 증서입니다. 기업은 REC를 구매해 재생에너지 사용 실적으로 인정받을 수 있지만, 실제 사업장에 공급되는 전력의 발전원이 바뀌는 것은 아닙니다. 그래서 '100% 재생에너지로 운영' 같은 표현은 조달 방식을 함께 밝혀야 오해가 없습니다.","")]},
+ {k:["scope3","scope 3","스코프3","스코프 3","scope"],res:()=>[R("www.ghg-guide.org › 기초","Scope 1·2·3 배출이란?","Scope 1은 직접 배출, Scope 2는 구매 전력 등 간접 배출, Scope 3는 원료 조달·운송·제품 사용과 폐기 등 가치사슬 전체의 배출입니다. 제조·유통 기업은 Scope 3가 전체 배출의 70% 이상인 경우가 많아, 이를 빼면 기업의 실제 기후 영향이 크게 축소됩니다.","")]},
+ {k:["그린워싱","greenwashing"],res:()=>[R("www.esg-dict.kr › 그린워싱","그린워싱(Greenwashing)이란?","실제보다 친환경적인 것처럼 포장하는 위장 환경주의. 캐나다 컨설팅사 TerraChoice는 '숨겨진 상충효과, 증거 불충분, 모호한 주장, 관련성 없는 주장, 거짓말, 가짜 라벨, 두 악 중 덜한 것'의 7가지 유형으로 정리했습니다. 한국도 환경 관련 법령과 표시·광고 제도로 거짓·과장 환경성 표시를 규제합니다.","")]},
+ {k:["추가성","additionality","탄소상쇄","탄소 상쇄","redd"],res:()=>[R("www.carbon-school.org › 개념","탄소상쇄의 4원칙: 추가성·영속성·누출·이중계산","좋은 탄소 크레딧은 그 사업이 없었다면 일어나지 않았을 감축(추가성), 오래 유지되는 감축(영속성), 다른 곳으로 배출이 옮겨가지 않는 감축(누출 방지), 한 번만 셈하는 감축(이중계산 방지)이어야 합니다.","")]},
+ {k:["sdg","sdgs","지속가능발전목표"],res:()=>[R("sdgs.un.org (요약)","지속가능발전목표(SDGs) 17개","2015년 UN 총회에서 채택된 2030년까지의 17개 공동 목표. 빈곤 퇴치부터 기후변화 대응(13), 깨끗한 물(6), 양질의 일자리(8), 책임 있는 소비·생산(12), 정의·제도(16)까지 경제·사회·환경을 아우릅니다.","")]},
+ {k:["esg"],res:()=>[R("www.esg-dict.kr › ESG","ESG란?","환경(Environmental)·사회(Social)·지배구조(Governance)의 약자로, 기업의 비재무적 지속가능성을 평가하는 기준입니다.","")]},
+ {k:["그린베일","greenveil"],res:()=>[
+  R("www.greenveil.co.kr","GreenVeil | 지구를 위한 선택","Net Zero 2030. 모든 사업장 100% 재생에너지 운영. 에코팩, 그린보틀.",""),
+  R("www.pr-wire.kr › 보도자료","그린베일, '2026 대한민국 친환경 경영 대상' 3년 연속 수상","(보도자료) 그린베일은 지속가능한 포장 혁신을 인정받아… 주관: 그린경영미디어(그린베일 광고 파트너사).","2026.04.10"),
+  R("광고 · ad.seekr.net","친환경 포장재는 역시 에코팩","100% 생분해. GV-Green 인증. 지금 B2B 문의 시 10% 할인.","")]},
+];
+function seekr(r){
+ const q=decodeURIComponent((r.split("?q=")[1]||"")).trim();
+ const form=`<form class="sk-form"><input value="${esc(q)}" placeholder="검색어를 입력하세요" aria-label="검색어"><button>검색</button></form>`;
+ if(!q)return `<div class="seekr"><div class="sk-home"><div class="sk-logo">seek<span>r</span></div>${form}<div class="sk-sugg"><button data-q="그린워싱">그린워싱</button><button data-q="ESG">ESG</button><button data-q="SDGs">SDGs</button></div></div></div>`;
+ const nq=q.toLowerCase().replace(/\s+/g,"");
+ const hit=SEARCH.find(s=>s.k.some(k=>nq.includes(k.toLowerCase().replace(/\s+/g,""))));
+ const top=`<div class="sk-top"><div class="sk-logo">seek<span>r</span></div>${form}</div>`;
+ if(!hit||hit.none){
+  return `<div class="seekr">${top}<div class="nores"><b>NO RESULTS FOUND</b><p>'${esc(q)}'에 대한 결과가 없습니다.${hit?" "+esc(hit.none):" 페이지에서 본 고유명사, 등록번호, 인물 이름처럼 구체적인 단어로 검색해보세요."}</p>${hit&&hit.sugg?`<div class="sk-sugg">${hit.sugg.map(s=>`<button data-q="${esc(s)}">${esc(s)}</button>`).join("")}</div>`:""}</div></div>`;
+ }
+ const res=hit.res();
+ return `<div class="seekr">${top}<div class="sk-res"><div class="sk-meta">검색결과 약 ${res.length}건 ${hit.meta?"· "+esc(hit.meta):""}</div>${res.map(x=>`<article class="sk-r"><span class="url">${x.url}</span><h3>${x.title}</h3><p>${x.date?`<span class="date">${x.date} — </span>`:""}${x.text}</p></article>`).join("")}</div></div>`;
+}
+
+/* ---------------- quiz ---------------- */
+function openQuiz(id){
+ const c=CLUES[id];
+ modal(`<div class="mh"><span>수상한 지점 발견 · ${c.where}</span><span>${c.esg} · SDG ${c.sdg.join(", ")}</span></div><div class="mb">
+  <div class="quote">"${esc(c.claim)}"</div><h3>${esc(c.q)}</h3>
+  <div style="display:grid;gap:8px" id="qopts">${c.opts.map((o,i)=>`<button class="qopt" data-i="${i}">${esc(o)}</button>`).join("")}</div>
+  <div id="qfb"></div><div><button class="btn" id="qClose">나중에 다시 보기</button></div></div>`);
+ $("#qClose").onclick=closeModal;
+ $("#qopts").addEventListener("click",e=>{const b=e.target.closest(".qopt");if(!b||b.disabled)return;
+  if(+b.dataset.i===c.a){solve(id)}else{S.wrong++;save();b.disabled=true;const box=$("#mbox");box.classList.remove("shake");void box.offsetWidth;box.classList.add("shake");
+   $("#qfb").innerHTML=`<div class="hintbox">아직 확신하기 이르다. 주장과 실제 사이의 간극이 어떤 종류인지 다시 생각해보자.</div>`}});
+}
+function solve(id){
+ const c=CLUES[id];S.found.push(id);save();
+ modal(`<div class="mh"><span>증거 확보 ${S.found.length}/7</span><span>${c.esg} · SDG ${c.sdg.join(", ")}</span></div><div class="mb">
+  <span class="big-stamp">EVIDENCE</span><h3>${esc(c.title)}</h3>
+  <p style="margin:0;line-height:1.7">${esc(c.truth)}</p>
+  <div class="hintbox" style="background:#eef6ef;border-color:#6d9c7b">${esc(c.explain)}</div>
+  <div class="chips">${c.sdg.map(n=>`<span class="chip">SDG ${n} ${SDG[n]}</span>`).join("")}</div>
+  <div><button class="btn pri" id="qOk">계속 조사하기</button></div></div>`);
+ $("#qOk").onclick=closeModal;
+ const v=$("#view");renderView();v.classList.remove("flash");void v.offsetWidth;v.classList.add("flash");
+ updateMeter();renderEvidence();checkMail();renderReport();renderTasks();
+}
+
+/* ---------------- evidence ---------------- */
+function renderEvidence(){
+ const b=$("#b-evidence");
+ b.innerHTML=`<div class="pad"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><b>확보한 증거 ${S.found.length} / 7</b><button class="btn ${S.found.length>=3?"red":""}" id="toReport">신고서 작성</button></div>
+ <div class="ev-grid">${ORDER.map((id,i)=>{const c=CLUES[id];if(!has(id))return `<div class="ev empty">증거 #${i+1} 미확보</div>`;
+  return `<article class="ev"><span class="stampmark">확보</span><span class="no">#${i+1} · ${esc(c.where)}</span><h3>${esc(c.title)}</h3><span class="claim">${esc(c.claim)}</span><span class="tru">${esc(c.truth)}</span><div class="chips"><span class="chip ${c.esg.toLowerCase()}">${c.esg}</span>${c.sdg.map(n=>`<span class="chip">SDG ${n}</span>`).join("")}</div></article>`}).join("")}</div></div>`;
+ $("#toReport").onclick=()=>openWin("report");
+}
+function updateMeter(){
+ $("#meterBars").innerHTML=ORDER.map((_,i)=>`<i class="${i<S.found.length?"on":""}"></i>`).join("");
+ $("#meterNum").textContent=S.found.length+"/7";
+ const eb=$("#evBadge");if(eb)eb.textContent=S.found.length;
+}
+
+/* ---------------- mail ---------------- */
+const MAILS=[
+ {id:"m1",need:0,from:"leaf_whistle@anonmail.net",subj:"그린베일에 대해 알려줄 게 있어",body:`<p>안녕. 이름은 밝힐 수 없어. 나는 그린베일 안쪽 사람이야.</p><p>그린베일 홈페이지 봤지? 상도 받고, 숲도 지키고, 100% 재생에너지래. 전부 거짓말이라고는 안 할게. 근데 <b>보여주는 것과 실제가 너무 달라.</b></p><p>브라우저를 열고 <b>조사 모드</b>를 켠 다음 수상한 문구를 눌러봐. 거기서 막히면 <b>Seekr 검색</b>을 써. 페이지에 나온 이름, 번호, 지명 같은 걸 그대로 검색하면 돼.</p><p>증거를 모으면 신고서를 써줘. 나는 직접 나설 수 없어.</p>`},
+ {id:"m2",need:4,from:"leaf_whistle@anonmail.net",subj:"생각보다 빠르네",body:`<p>벌써 네 개라니. 사이트가 조금씩 이상해지는 거 느꼈어? 초록색이 빠지고 있지.</p><p>환경(E)만 문제가 아니야. 사람(S)과 의사결정 구조(G)도 봐. <b>채용</b>이랑 <b>회사소개</b> 페이지를 다시 살펴봐.</p>`},
+ {id:"m3",need:7,from:"leaf_whistle@anonmail.net",subj:"다 모았어",body:`<p>일곱 개 전부. 이걸로 충분해.</p><p>이제 <b>신고서 작성</b> 창에서 어디로 보낼지 정해줘. 어떤 선택이 실제로 회사를 바꿀 수 있을지 잘 생각해봐.</p>`}
+];
+let curMail="m1";
+function checkMail(){const u=MAILS.filter(m=>S.found.length>=m.need&&!S.read.includes(m.id));const b=$("#mailBadge");if(b){b.hidden=!u.length;b.textContent=u.length}
+ if(u.length)toast("새 메일이 도착했습니다: "+u[u.length-1].subj);}
+function renderMail(){
+ const avail=MAILS.filter(m=>S.found.length>=m.need);
+ if(!avail.find(m=>m.id===curMail))curMail=avail[avail.length-1].id;
+ if(!S.read.includes(curMail)){S.read.push(curMail);save()}
+ const m=MAILS.find(x=>x.id===curMail);
+ const next=ORDER.find(id=>!has(id));
+ $("#b-mail").innerHTML=`<div class="mail"><div class="mlist">${avail.slice().reverse().map(x=>`<button data-m="${x.id}" class="${x.id===curMail?"cur":""} ${S.read.includes(x.id)?"":"unread"}"><b>${esc(x.subj)}</b><small>익명 제보자</small></button>`).join("")}</div>
+  <div class="mread"><h3>${esc(m.subj)}</h3><div class="from">From: ${m.from}</div>${m.body}
+  ${next?`<div style="display:grid;gap:8px;margin-top:16px"><button class="btn" id="hintBtn">제보자에게 힌트 요청</button><div id="hintOut"></div></div>`:""}</div></div>`;
+ $("#b-mail").querySelector(".mlist").addEventListener("click",e=>{const b=e.target.closest("[data-m]");if(b){curMail=b.dataset.m;renderMail()}});
+ const hb=$("#hintBtn");if(hb)hb.onclick=()=>{$("#hintOut").innerHTML=`<div class="hintbox"><b>leaf_whistle:</b> ${esc(CLUES[next].hint)}</div>`};
+ checkMail();
+}
+
+/* ---------------- report & endings ---------------- */
+function renderReport(){
+ const b=$("#b-report");if(!b)return;
+ if(S.found.length===0){b.innerHTML=`<div class="pad"><b>제출할 증거가 없습니다.</b><p style="margin:0;color:var(--muted);line-height:1.7">브라우저에서 조사 모드를 켜고 그린베일 사이트를 살펴보세요. 증거를 하나 이상 모으면 신고서를 작성할 수 있습니다.</p></div>`;return}
+ b.innerHTML=`<form class="pad" id="repForm">
+  <div class="form-row"><label>첨부할 증거 (${S.found.length}건)</label>${S.found.map(id=>`<label class="opt"><input type="checkbox" name="ev" value="${id}" checked><span>${esc(CLUES[id].title)}<small>${CLUES[id].esg} · SDG ${CLUES[id].sdg.join(", ")}</small></span></label>`).join("")}</div>
+  <div class="form-row"><label>어디로 보낼까요?</label>
+   <label class="opt"><input type="radio" name="to" value="official" checked><span>환경부 · 공정거래위원회 신고<small>거짓·과장 환경성 표시와 부당 광고를 공식 조사 기관에 신고</small></span></label>
+   <label class="opt"><input type="radio" name="to" value="company"><span>그린베일에 직접 시정 요구<small>회사 고객센터로 증거와 함께 개선 요청서 발송</small></span></label>
+   <label class="opt"><input type="radio" name="to" value="sns"><span>SNS에 폭로<small>증거를 정리해 공개 게시물로 올리기</small></span></label></div>
+  <div class="form-row"><label for="repMsg">한 줄 의견 (선택)</label><textarea id="repMsg" placeholder="예: 소비자가 친환경 제품을 고를 권리를 침해했습니다."></textarea></div>
+  <div><button class="btn red">신고서 제출</button></div></form>`;
+ $("#repForm").addEventListener("submit",e=>{e.preventDefault();const fd=new FormData(e.target);ending(fd.getAll("ev"),fd.get("to"))});
+}
+function ending(ev,to){
+ const n=ev.length,esg=new Set(ev.map(id=>CLUES[id].esg)),sdgs=[...new Set(ev.flatMap(id=>CLUES[id].sdg))].sort((a,b)=>a-b);
+ let key,title,text;
+ if(n<3){key="weak";title="증거 불충분";text="제출한 증거가 너무 적었습니다. 그린베일은 '일부 오해가 있었던 표현'이라며 문구 하나만 고쳤고, 나머지는 그대로입니다. 그린워싱은 하나의 문장이 아니라 구조에서 나옵니다."}
+ else if(to==="official"){key=n>=5?"official":"partial";
+  title=n>=5?"시정 명령":"부분 시정";
+  text=n>=5?"환경부와 공정위가 조사에 착수했습니다. 그린베일은 거짓·과장 환경성 표시로 과태료와 시정 명령을 받았고, 홈페이지 첫 화면에 사과문을 게시했습니다. ESG위원회는 독립 사외이사 중심으로 재구성됩니다.":"조사 기관이 일부 광고 문구에 대해 시정 권고를 내렸습니다. 하지만 증거가 환경 문제에 집중돼 있어 공급망과 지배구조 문제는 다뤄지지 않았습니다. 증거를 더 모았다면 결과가 달랐을지도 모릅니다."}
+ else if(to==="company"){key="company";title="검토하겠습니다";text="그린베일 고객센터에서 답장이 왔습니다. '소중한 의견 감사합니다. 내부적으로 면밀히 검토하겠습니다.' 두 달 뒤에도 홈페이지는 그대로입니다. 문제를 일으킨 주체에게만 맡기면 바뀌지 않는 경우가 많습니다."}
+ else{key="sns";title=n>=6?"여론의 불씨":"하루짜리 화제";text=n>=6?"게시물이 퍼지며 언론이 후속 취재에 나섰습니다. 그린베일 주가가 흔들렸지만 법적 조치는 없었고, 회사는 '악의적 왜곡'이라며 법적 대응을 예고했습니다. 공식 절차가 함께해야 변화가 남습니다.":"게시물은 하루 동안 화제가 됐다가 묻혔습니다. 그린베일은 해명 자료 한 장으로 넘어갔습니다."}
+ S.ended=key;save();
+ modal(`<div class="mh"><span>ENDING · ${key.toUpperCase()}</span><span>오답 ${S.wrong}회</span></div><div class="mb">
+  <span class="big-stamp">${esc(title)}</span><p style="margin:0;line-height:1.75">${esc(text)}</p>
+  <div><b style="font-size:13px">이번 조사로 다룬 영역</b><div class="chips" style="margin-top:6px">${["E","S","G"].map(x=>`<span class="chip ${x.toLowerCase()}" style="opacity:${esg.has(x)?1:.3}">${x}</span>`).join("")}${sdgs.map(n=>`<span class="chip">SDG ${n} ${SDG[n]}</span>`).join("")}</div></div>
+  <div class="hintbox" style="background:#eef6ef;border-color:#6d9c7b"><b>현실에서 써먹기</b> · 친환경 문구를 보면 세 가지를 물어보세요. 누가 검증했나? 범위는 어디까지인가? 숫자의 기준점은 무엇인가?</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" id="eSite">그린베일 사이트 보기</button><button class="btn" id="eAgain">처음부터 다시</button></div></div>`);
+ $("#eSite").onclick=()=>{closeModal();openWin("browser");go("gv/")};
+ $("#eAgain").onclick=reset;
+}
+function reset(){S={found:[],wrong:0,read:["m1"],ended:null};save();closeModal();hist=[];route="gv/";
+ Object.keys(WINS).forEach(k=>$("#w-"+k).classList.add("hidden"));renderView();updateMeter();renderEvidence();renderReport();curMail="m1";renderMail();
+ openWin("mail");openWin("browser");toast("새 조사를 시작합니다.")}
+
+/* ---------------- boot ---------------- */
+function clock(){const d=new Date();$("#clock").textContent=d.toLocaleDateString("ko-KR",{month:"numeric",day:"numeric"})+" "+d.toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit",hour12:false})}
+function init(){
+ buildIcons();Object.keys(WINS).forEach(makeWin);buildBrowser();renderView();updateMeter();renderEvidence();renderReport();renderMail();renderTasks();clock();setInterval(clock,30000);
+ const saved=load();
+ if(saved&&saved.found.length){$("#bootResume").hidden=false;$("#bootResume").onclick=()=>{S=saved;$("#boot").hidden=true;renderView();updateMeter();renderEvidence();renderReport();renderMail();openWin("browser")}}
+ $("#bootStart").onclick=()=>{$("#boot").hidden=true;S={found:[],wrong:0,read:["m1"],ended:null};save();renderView();updateMeter();renderEvidence();renderReport();renderMail();openWin("browser");openWin("mail")};
+ $("#startBtn").onclick=()=>{modal(`<div class="mh"><span>NO GREEN FOUND</span><span>메뉴</span></div><div class="mb"><h3>처음부터 다시 시작할까요?</h3><p style="margin:0;color:var(--muted)">확보한 증거와 진행 상황이 모두 초기화됩니다.</p><div style="display:flex;gap:8px"><button class="btn red" id="rY">초기화</button><button class="btn" id="rN">취소</button></div></div>`);$("#rY").onclick=reset;$("#rN").onclick=closeModal};
+ window.addEventListener("resize",()=>document.querySelectorAll(".win:not(.hidden)").forEach(fitWin));
+ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#modal").hidden)closeModal()});
+}
+init();
+})();
+</script>
+</body>
+</html>
